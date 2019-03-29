@@ -25,7 +25,7 @@ CJK_ANS_RE = re.compile( r'([\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30f
 ANS_CJK_RE = re.compile( r'([A-Za-z0-9`~\$%\^&\*\-=\+\\\|/!;:,\.\?\u00a1-\u00ff\u2022\u2026\u2027\u2150-\u218f])([\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30ff\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff])' )
 
 
-VERSION = "v20190122"
+VERSION = "v20190329"
 def __version__():
 
 
@@ -1005,12 +1005,12 @@ def readable(file, check_zero_size = True):
     else:
         return False
 
-def run(command, verbose= True, manager_dict= None, key= None, wait=None, dummy_mode= False):
+def run(command_str:str, verbose= True, manager_dict= None, key= None, wait=None, dummy_mode= False):
     '''
     A simple subprocess wrapper, v0.2a
 
     Parameters:
-        **command**: string
+        **command_str**: string
             The terminal command you want to run.
 
         **verbose**: boolean
@@ -1026,7 +1026,7 @@ def run(command, verbose= True, manager_dict= None, key= None, wait=None, dummy_
         **key**: any or None
             If not None, when manager_dict is set, this parameter will be the key of manager_dict
 
-            Otherwise parameter command will be used as key.
+            Otherwise parameter command_str will be used as key.
 
         **wait**: integer or None
             A wrapper of Popen.wait(timeout=None)
@@ -1038,8 +1038,8 @@ def run(command, verbose= True, manager_dict= None, key= None, wait=None, dummy_
     import multiprocessing, subprocess, shlex, os, sys
 
     #==============================================================================================
-    if not isinstance(command, str):
-        message = 'Parameter command expects a string, instead type {} was given.'.format(type(command))
+    if not isinstance(command_str, str):
+        message = 'Parameter command_str expects a string, instead type {} was given.'.format(type(command_str))
         raise TypeError(message)
 
     if not isinstance(verbose, bool):
@@ -1059,17 +1059,17 @@ def run(command, verbose= True, manager_dict= None, key= None, wait=None, dummy_
         raise TypeError(message)
     #==============================================================================================
     if dummy_mode:
-        print("[ATTENTION]Run in dummy mode: " + command)
+        print("[ATTENTION]Run in dummy mode: " + command_str)
         return [0, '', '']
 
-    # if there's pipe in the command, then shell=TRUE must be used and it is recommended to pass args as a string rather than as a sequence.
-    if '~' in command or '*' in command or '?' in command or "|" in command or ">" in command or "<" in command or "&" in command:
+    # if there's pipe in the command_str, then shell=TRUE must be used and it is recommended to pass args as a string rather than as a sequence.
+    if '~' in command_str or '*' in command_str or '?' in command_str or "|" in command_str or ">" in command_str or "<" in command_str or "&" in command_str:
         useShell_bool = True
-        command = command
+        command = command_str
 
-    else:  # if there's no pipe in the command
+    else:  # if there's no pipe in the command_str
         useShell_bool = False
-        command = shlex.split(command)
+        command = shlex.split(command_str)
 
     output_str = ""; error_str = ""
     if verbose:   # if we need real-time output
@@ -1107,12 +1107,12 @@ def run(command, verbose= True, manager_dict= None, key= None, wait=None, dummy_
     try:
         if isinstance(manager_dict, multiprocessing.managers.DictProxy):
             if key is None:
-                manager_dict[command] = [r.returncode, output_str.strip() , error_str.strip() ]
+                manager_dict[command_str] = [r.returncode, output_str.strip() , error_str.strip() ]
             else:
                 manager_dict[key] = [r.returncode, output_str.strip() , error_str.strip() ]
     except:
-        message = 'The command "{command}......" was executed but fail to assign return list to multiprocessing.managers.DictProxy {manager_dict}'.format(command= command.split()[:10],
-                                                                                                                                                       manager_dict= manager_dict)
+        message = 'The command "{command_str}......" was executed but fail to assign return list to multiprocessing.managers.DictProxy {manager_dict}'.format(command_str= command_str,
+                                                                                                                                                              manager_dict= manager_dict)
         cprint(message)
         raise
 
