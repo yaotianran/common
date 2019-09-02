@@ -1,6 +1,9 @@
-from __future__ import print_function
-import sys, re, os
+# TODO:
+# 1, rewrite config_to_ini using collections.OrderedDict objects
+# 2, optimize parameters in cprint
 
+from __future__ import print_function
+import sys, re, os, time
 CJK_str = '[\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30ff\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]'
 CJK_RE = re.compile( r'[\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30ff\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+' )
 CJK_QUOTE_RE = re.compile( r'([\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30ff\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff])(["\'])' )
@@ -25,7 +28,7 @@ CJK_ANS_RE = re.compile( r'([\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30f
 ANS_CJK_RE = re.compile( r'([A-Za-z0-9`~\$%\^&\*\-=\+\\\|/!;:,\.\?\u00a1-\u00ff\u2022\u2026\u2027\u2150-\u218f])([\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30ff\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff])' )
 
 
-VERSION = "v20190329"
+VERSION = "v20190902"
 def __version__():
 
 
@@ -100,7 +103,7 @@ def divide_dict(dictionary, chunk_size):
     '''
     Divide one dictionary into several dictionaries
 
-    Return a list, each item is a dictionary
+    Return a list, each item is a dictionary with items of chunk_size
     '''
 
     import numpy, collections
@@ -202,25 +205,32 @@ def config_to_ini(config, fileobject, sequence='sorted', hint=None ,space_around
     Dependency: checkFile
 
     Parameter:
-        config: The configparser.ConfigParser() object you want to want
+        **config**: A configparser.ConfigParser() object
+            The config object you want to write
 
-        fileobject: a file name or a fileobject you want to write into
+        **fileobject**: string or a fileobject
+            Where you want to write into
 
-        sequence: either None, 'sorted' or a dictionary, which represents the sequence you want to write.
-                    The sequence dictionary is like:
-                        {'Sections':[section1_name, section2_name,.....], 'section1_name':[keyname1 in section1, keyname2 in section1......], 'section2_name':[keyname1 in section2, keyname2 in section2......], ......  }
-                    Sections and keys that are not in the sequence dictionary will be writen into the configuration file alphabetically.
-                    Section 'DEFAULT' will be always on the top of the configuration file (even if 'DEFAULT' section is not the first item in sequence['Sections'] )
-                    If None, sections and keys will be writen arbitrarily as if configparser.ConfigParser().write does.
+        **sequence**: either None, 'sorted' or a dictionary
+            This represents the sequence you want to write.
+            If None, sections and keys will be writen arbitrarily as if configparser.ConfigParser().write does.
+            If a dictionary. The dictionary will be like:
+            {'Sections':[section1_name, section2_name,.....], 'section1_name':[keyname1 in section1, keyname2 in section1......], 'section2_name':[keyname1 in section2, keyname2 in section2......], ......  }
+            Sections and keys that are not in the sequence dictionary will be writen into the configuration file alphabetically.
+            Section 'DEFAULT' will be always on the top of the configuration file (even if 'DEFAULT' section is not the first item in sequence['Sections'] )
 
-        Hint: None or a dictionary containing comments. The hint dictionary is in the follwing format:
+        **Hint**: None or a dictionary containing comments.
+            The hint dictionary is in the follwing format:
                 { (section1, key1):'your_comments', (section2, key2):'your_comments'........  }
 
-        space_around_delimiters: If space_around_delimiters is true, delimiters between keys and values are surrounded by spaces.
+        **space_around_delimiters**: boolean
+            If space_around_delimiters is true, delimiters between keys and values are surrounded by spaces.
 
-        raise_on_exist: If True and the file exists an exception will be raised. If a fileobject is given this parameter will be ignored.
+        **raise_on_exist**: boolean
+            If True and the file exists an exception will be raised. If a fileobject is given this parameter will be ignored.
 
-    Return True if completely successful
+    Returns:
+        True if completely successful
 
     '''
     import configparser, io
@@ -397,23 +407,23 @@ def config_to_ini(config, fileobject, sequence='sorted', hint=None ,space_around
 def cprint(string, pos=[], style=[ [1,31] ], end='\n'):
     '''
     This function will print a string in a given position using color and style with ANSI escape character 'ESC' (ASCII decimal 27 / hex 0x1B / octal 033)
-    More detail on https://en.wikipedia.org/wiki/ANSI_escape_code
+    More detail on https://en.wikipedia.org/wiki/ANSI_escape_code fragment
 
     Parameters:
         **string**: string
             The string you want to print in colors and special styles
 
         **pos**: 2D list
-            It contains several range lists such as [ [start1, end1], [start2, end2], .... ]. Empty list [] means whole string.
+            It contains several range lists such as [ [start_pos1, end_pos1], [start_pos2, end_pos2], .... ]. Empty list [] means whole string.
 
-            For example if you want to print the first and second chars of a string in underlined bright red, 5th-7th chars in  cross-outed faint cyan,
-            you should set pos as [ [0,2], [4,7] ], in which [0,2] means the first and second chars and [4,7] means 5th-7th chars
+            For example if you want to print out a string, in which the first and second chars in a customed style, and 5th-7th chars in another style
+            you should set pos as [ [0,2], [4,7] ]. Hereby [0,2] means the first and second chars and [4,7] means 5th-7th chars
 
         **style**:2D list
-            It contains several integers lists. Each item represents a print style. More detail on https://en.wikipedia.org/wiki/ANSI_escape_code
+            It contains several integer lists. Each item represents a print style. More detail on https://en.wikipedia.org/wiki/ANSI_escape_code
 
-            For example if you want to print first and second char in a string in bright red and underline, 5th-7th char in faint cyan and cross-out
-            you should set style as [ [1,4,31], [2,9,36] ], in which [1,4,31] means bright red and underline style and [2, 9, 36] for faint cyan and cross-out style
+            For example if you want to print first character segment in a string in bright red underline and second character segment in faint cyan cross-out
+            you should set style as [ [1,4,31], [2,9,36] ]. Hereby [1,4,31] means bright red underline and [2, 9, 36] for faint cyan cross-out.
 
         *Obviously parameters 'pos' and 'style' must be in an equal length, unless pos is left empty as default*
 
@@ -489,7 +499,10 @@ def ckprint(string, keyword, style=[1,31], case_sensitive=True, end='\n') :
 
     Example:
         s = 'Python Type "help", "copyright", "credits" or "license" for more information.'
-        ckprint( s, ['op','ts', 'or'] ) , the keywords in string will be printed out in light red.
+
+        ckprint(s, ['op','ts', 'or']).
+
+        The keywords in string will be printed out in light red.
     '''
     import re
     #=========================check format==============================
@@ -669,11 +682,6 @@ def ini_to_config(ini_file, comment_mark='#'):
         print('Warning: Not section found in config object')
     return config
 
-
-
-
-
-
 def HowManyLinesToSkip(inputfile_str, skipmark_str = "#"):
 
     """
@@ -706,7 +714,7 @@ def HowManyLinesToSkip(inputfile_str, skipmark_str = "#"):
 
     return skip_int
 
-def multi_run(ProcessList, simultaneous, print_name = True):
+def multi_run_backwards(ProcessList, simultaneous, print_name = True):
     '''
     Spawn multiple processes
 
@@ -1137,122 +1145,78 @@ def warn(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-#=======================class================================
-class input_file:
+
+def multi_run(ProcessList:list, simultaneous:int, join = 500, verbose = True):
     '''
-    properties:
+    Spawn multiple processes
 
-    methods:
+    Parameter:
+        **ProcessList**: List
+            A list, in which each item is a multiprocessing.Process() objects
 
+        **simultaneous**: int
+            An integer, how many processes do you want to spawn simultaneously?
+
+        **join**: int
+            Make a memory collection after N processes finish. Default 500 should be small enough for 16GB RAM machine.
+            Lower it if you have 8GB or less RAM.
+
+        **verbose**: bool
+            Whether print process's name what a process starts ?
+
+    Return:
+        None on success
     '''
+    from multiprocessing import Process
+    #==========================
+    if not isinstance(simultaneous, int):
+        message = 'Paramater "simultaneous" expects an integer, istead a {} is given'.format(type(simultaneous))
+        raise TypeError(message)
+    elif simultaneous <= 0:
+        message = 'Paramater "simultaneous" must be greater than 0, the current value is {}'.format(simultaneous)
+        raise ValueError(message)
 
-    __file_name_str = ''
-
-    def __init__(self, file_name):
-        import os
-        import os.path as path
-
-        temp_str = path.realpath(path.expanduser( file_name ))
-        if os.access(temp_str, os.R_OK):
-            self.__file_name_str = temp_str
+    if isinstance(ProcessList, list):
+        if ProcessList == []:
+            message = 'ProcessList is an empty list.'
+            raise ValueError(message)
         else:
-            message = 'File {} is not readable.'.format(file_name)
-            raise FileNotFoundError(message)
+            for p in ProcessList:
+                if not isinstance(p, Process):
+                    message = 'Paramater "ProcessList" expects a list of multiprocessing.Process objects, instead it contains a {} item.'.format(type(p))
+                    raise TypeError(message)
+    else:
+        message = 'Paramater "ProcessList" expects a list, instead a {} is given'.format(type(ProcessList))
+        raise TypeError(message)
+    #==========================
 
-        return None
+    running_process_int = 0  # how many processes are actually active. A process existing in memory but not carring any payload is not be considered as 'active'
+    running_process_lst = []
+    while len(ProcessList) > 0:
+        try:
+            if running_process_int < simultaneous:
+                p = ProcessList.pop(0)
+                if verbose:
+                    message = '[START] {process_name}'.format(process_name= p.name)
+                    cprint(message, style= [[1,96]] )
+                p.start()
+                running_process_lst.append(p)
+        except:
+            pass
 
-    @property
-    def file_name(self):
-        #do something here
-        return self.__file_name_str
+        running_process_int = 0
+        for running_p in running_process_lst:
+            if running_p.is_alive():
+                running_process_int += 1
 
-    @property
-    def is_exist(self):
-        import os
-        return os.access(self.__file_name_str, os.R_OK)
+        if len(running_process_lst) == 500:
+            for running_p in running_process_lst:
+                running_p.join()
+            running_process_lst = []
 
-    @property
-    def base_name(self):
-        import os.path as path
-        temp_str = path.split(self.__file_name_str)[1]
-        temp_str = path.splitext(temp_str)[0]
-        return temp_str
+        time.sleep(0.25)
 
-    @file_name.setter
-    def file_name(self, new_file_name):
-        #do some format check here
-        self.__init__(new_file_name)
-        return None
+    for running_p in running_process_lst:
+        running_p.join()
 
-    def __del__(self):
-        if os.access(self.__file_name_str, os.R_OK):
-            print('{} deleted'.format(self.__file_name_str))
-            os.remove(self.__file_name_str)
-        return None
-
-    def __repr__(self):
-        return self.__file_name_str
-
-    def __str__(self):
-        return self.__file_name_str
-
-    def __add__(self, other):
-        if not isinstance(other, str):
-            message = 'Only a string can be added to a INPUT_FILE object, but a {} is given.'.format(type(other))
-            raise TypeError(message)
-        return self.__file_name_str + other
-
-#=======================test zone============================
-from pprint import pprint as pp
-'''
-s = '3.5.2 (defaul 你们就是不加空格（））)者的\t, Se你们就是不加空格p 14 2017, 22你们就是不加空格:51:06)你们就是不加空格'
-
-new = spacing_text(s)
-
-print(new)
-
-print( md5('~/rarreg.key') )
-print( __version__ )
-
-name = '~/human.fastq'
-fix = '_sorted'
-print( add_fix(name, fix, suffix= True) )
-
-
-
-data = {"a":1, "b":2, "c":3, "d":4, "e":5, 'f':6, 'g':7}
-pp( divide_dict(data, 3) )
-
-
-def process(string):
-    print()
-    print(string.strip() + 'suffix')
-    return
-
-from multiprocessing import Process
-process_lst = []
-
-seq_f = open('/home/user/sda1/sequence_grouping.txt', 'r')
-for s in seq_f.readlines():
-    s = s.strip()
-    p = Process(target=process, args=(s,) )
-    process_lst.append(p)
-
-multi_run(process_lst, 15)
-seq_f.close()
-
-import multiprocessing
-d = multiprocessing.Manager().dict()
-path_lst = ['~/sda1', '~/sda1/Torrents', '~/sda1/tutorial_11136', '~/sda1/Videos']
-process_lst = []
-for s in path_lst:
-    command_str = 'ls -al {}'.format(s)
-    p = multiprocessing.Process(target= run, args= (command_str, True, d,) )
-    process_lst.append(p)
-
-multi_run(process_lst, 2)
-print('=================')
-pp(dict(d))
-
-print(get_free_mem())
-'''
+    return None
