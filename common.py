@@ -1146,7 +1146,7 @@ def warn(*args, **kwargs):
 
 
 
-def multi_run(ProcessList:list, simultaneous:int, join = 500, verbose = True):
+def multi_run(ProcessList:list, simultaneous:int, join = 300, verbose = True):
     '''
     Spawn multiple processes
 
@@ -1158,7 +1158,7 @@ def multi_run(ProcessList:list, simultaneous:int, join = 500, verbose = True):
             An integer, how many processes do you want to spawn simultaneously?
 
         **join**: int
-            Make a memory collection after N processes finish. Default 500 should be small enough for 16GB RAM machine.
+            Make a memory collection after N processes finish.
             Lower it if you have 8GB or less RAM.
 
         **verbose**: bool
@@ -1168,6 +1168,7 @@ def multi_run(ProcessList:list, simultaneous:int, join = 500, verbose = True):
         None on success
     '''
     from multiprocessing import Process
+    import time
     #==========================
     if not isinstance(simultaneous, int):
         message = 'Paramater "simultaneous" expects an integer, istead a {} is given'.format(type(simultaneous))
@@ -1197,26 +1198,64 @@ def multi_run(ProcessList:list, simultaneous:int, join = 500, verbose = True):
             if running_process_int < simultaneous:
                 p = ProcessList.pop(0)
                 if verbose:
-                    message = '[START] {process_name}'.format(process_name= p.name)
+                    local_time = time.localtime()
+                    message = '[{year}-{month:>02}-{day:>02} {hour:>02}:{min:>02}:{sec:>02}] {process_name}'.format(process_name= p.name,
+                                                                                                                    year= local_time.tm_year,
+                                                                                                                    month= local_time.tm_mon,
+                                                                                                                    day= local_time.tm_mday,
+                                                                                                                    hour= local_time.tm_hour,
+                                                                                                                    min= local_time.tm_min,
+                                                                                                                    sec= local_time.tm_sec)
                     cprint(message, style= [[1,96]] )
                 p.start()
                 running_process_lst.append(p)
-        except:
-            pass
+        except Exception as ex:
+            message = '[{year}-{month:>02}-{day:>02} {hour:>02}:{min:>02}:{sec:>02}] {ex}'.format(ex= ex,
+                                                                                                  year= local_time.tm_year,
+                                                                                                  month= local_time.tm_mon,
+                                                                                                  day= local_time.tm_mday,
+                                                                                                  hour= local_time.tm_hour,
+                                                                                                  min= local_time.tm_min,
+                                                                                                  sec= local_time.tm_sec)
+            cprint(message)
 
-        running_process_int = 0
+        running_process_int = 0  # how many processes are currently running ?
         for running_p in running_process_lst:
             if running_p.is_alive():
                 running_process_int += 1
 
         if len(running_process_lst) == 500:
             for running_p in running_process_lst:
-                running_p.join()
+                try:
+                    running_p.join()
+                except Exception as ex:
+                    message = '[{year}-{month:>02}-{day:>02} {hour:>02}:{min:>02}:{sec:>02}] {ex}'.format(ex= ex,
+                                                                                                          year= local_time.tm_year,
+                                                                                                          month= local_time.tm_mon,
+                                                                                                          day= local_time.tm_mday,
+                                                                                                          hour= local_time.tm_hour,
+                                                                                                          min= local_time.tm_min,
+                                                                                                          sec= local_time.tm_sec)
+                    cprint(message)
+
             running_process_lst = []
 
         time.sleep(0.25)
 
     for running_p in running_process_lst:
-        running_p.join()
+        try:
+            running_p.join()
+        except Exception as ex:
+            message = '[{year}-{month:>02}-{day:>02} {hour:>02}:{min:>02}:{sec:>02}] {ex}'.format(ex= ex,
+                                                                                                  year= local_time.tm_year,
+                                                                                                  month= local_time.tm_mon,
+                                                                                                  day= local_time.tm_mday,
+                                                                                                  hour= local_time.tm_hour,
+                                                                                                  min= local_time.tm_min,
+                                                                                                  sec= local_time.tm_sec)
+            cprint(message)
 
     return None
+
+
+#=======================class================================
